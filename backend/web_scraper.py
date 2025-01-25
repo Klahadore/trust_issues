@@ -234,6 +234,10 @@ def scraper_pipeline(root_url: str):
         3. Never use colons or unescaped quotes in JSON values
         4. Output must parse with json.loads() FIRST TRY
 
+        If you aren't given anything useful in the terms and privacy policies:
+            Here is the name of the website: {root_url}
+            Recall the privacy policy and terms from memory. Be truthful to the name of the website.
+
         Example VALID response:
         {{
             "message": "- Hidden fees in §3.2\\n- Data sold to 3rd parties\\n- 90-day cancellation process",
@@ -247,7 +251,8 @@ def scraper_pipeline(root_url: str):
     # Test invocation
     prompt = schema_enforcement_prompt.invoke({
         "terms_and_conditions": terms_and_conditions_text,
-        "privacy_policy": privacy_policy_text
+        "privacy_policy": privacy_policy_text,
+        "root_url": root_url
     })
     response = structured_llm.invoke(prompt)
 
@@ -280,4 +285,4 @@ if __name__ == "__main__":
     #     print(url)
 
     # print(get_terms_URLS(found_policy_urls))
-    print(scraper_pipeline("linkedin.com"))
+    print(scraper_pipeline("kraftheinz.com"))
