@@ -4,8 +4,6 @@
     "version": "1.0.0",
     "manifest_version" : 3,
     "action":{
-        "template_popup": "template_popup.html"
+        "default_popup": "template_popup.html"
     }
-
-
 }
