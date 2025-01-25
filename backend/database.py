@@ -60,9 +60,16 @@ class MongoDBManager:
             document["_id"] = str(document["_id"])
         return document
 
+
     def close(self):
         """Close the MongoDB connection"""
         self.client.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 # Usage Example
 if __name__ == "__main__":

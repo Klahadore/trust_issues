@@ -37,12 +37,28 @@ flagging_template = PromptTemplate(
         "Text:\n{text}"
     )
 )
+flagging_template = PromptTemplate(
+    input_variables=["text"],
+    template=(
+        "You are a lawyer. Analyze the following terms and conditions and determine if it contains "
+        "misleading information. If so, flag it and provide a brief explanation "
+        "of why it is flagged. Respond with either:\n"
+        "- 'Safe: [Reason why the content is safe]'\n"
+        "- 'Flagged: [Reason why the content is harmful or misleading]'\n\n"
+        "Text:\n{text}"
+    )
+)
 
 flagging_chain = LLMChain(
     llm=llm,
     prompt=flagging_template
 )
+flagging_chain = LLMChain(
+    llm=llm,
+    prompt=flagging_template
+)
 
+sample_text = "This product guarantees 100% cancer cure instantly. No scientific evidence required!"
 sample_text = "This product guarantees 100% cancer cure instantly. No scientific evidence required!"
 
 response = flagging_chain.invoke({"text": sample_text})
