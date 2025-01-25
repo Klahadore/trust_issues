@@ -33,27 +33,28 @@ class MongoDBManager:
             print(f"Index creation failed: {e}")
             raise
 
-    def add_website(self, url: str, message: str) -> str:
-        """
-        Add a website to the database with URL and message
-        Returns the inserted document ID
-        """
-        document = {
-            "url": url,
-            "message": message,
-            "created_at": datetime.utcnow()
-        }
+    def add_website(self, url: str, message: str, extended_message: str) -> str:
+            """
+            Add a website with both short and extended messages
+            """
+            document = {
+                "url": url,
+                "message": message,
+                "extended_message": extended_message,
+                "created_at": datetime.utcnow()
+            }
 
-        try:
-            result = self.collection.insert_one(document)
-            print(f"Inserted document with ID: {result.inserted_id}")
-            return str(result.inserted_id)
-        except DuplicateKeyError:
-            print(f"Duplicate URL detected: {url}")
-            return None
-        except Exception as e:
-            print(f"Insert operation failed: {e}")
-            raise
+            try:
+                result = self.collection.insert_one(document)
+                print(f"Inserted document with ID: {result.inserted_id}")
+                return str(result.inserted_id)
+            except DuplicateKeyError:
+                print(f"Duplicate URL detected: {url}")
+                return None
+            except Exception as e:
+                print(f"Insert operation failed: {e}")
+                raise
+
 
     def website_exists(self, url: str) -> bool:
         """Check if a website exists in the database by URL"""
@@ -66,11 +67,14 @@ class MongoDBManager:
             raise
 
     def get_website(self, url: str) -> dict:
-        """Retrieve a website document by URL"""
+        """Retrieve website with extended message"""
         try:
             document = self.collection.find_one({"url": url})
             if document:
                 document["_id"] = str(document["_id"])
+                # Ensure all documents have extended_message
+                if "extended_message" not in document:
+                    document["extended_message"] = document["message"]
                 print(f"Retrieved document for {url}")
             else:
                 print(f"No document found for {url}")
@@ -93,24 +97,24 @@ class MongoDBManager:
             raise
 
     def get_all_websites(self) -> list[dict]:
-        """
-        Retrieve all website documents from the collection
-        Returns list of websites with string-converted IDs
-        """
+        """Retrieve all websites with extended messages"""
         try:
             cursor = self.collection.find()
             websites = []
 
             for document in cursor:
                 document["_id"] = str(document["_id"])
+                # Backfill legacy entries
+                if "extended_message" not in document:
+                    document["extended_message"] = document["message"]
                 websites.append(document)
 
             print(f"Retrieved {len(websites)} websites from database")
             return websites
-
         except Exception as e:
             print(f"Failed to retrieve websites: {e}")
             raise
+
 
     def close(self):
         """Close the MongoDB connection"""
@@ -139,7 +143,8 @@ if __name__ == "__main__":
         # Add a website
         website_id = db_manager.add_website(
             "https://example.com",
-            "This is an example website"
+            "This is an example website",
+            "This is an extended message"
         )
 
         if website_id:
