@@ -39,7 +39,8 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
         );
         currentRootDomain = newRootDomain;
         fetch(config + "/check_root_url/" + currentRootDomain)
-            .then(res => console.log(res))
+            .then(res => res.json())
+            .then(data => console.log(data))
         }
         }
     });
