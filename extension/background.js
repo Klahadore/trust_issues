@@ -1,169 +1,97 @@
-let currentTabId = null;
-let currentRootDomain = null;
-let config = "http://0.0.0.0:8000";
-let myData = null;
+const config_url = "http://0.0.0.0:8000/";
+let checkedDomains = new Set(); // Stores domains we've already checked
 
-function getRootDomain(urlStr) {
+console.log("Background script loaded");
+
+// Get simple website address (like "google.com" from "https://mail.google.com")
+function getRootDomain(url) {
   try {
-    const { hostname } = new URL(urlStr);
-    const parts = hostname.split(".").filter(Boolean);
-
-    // remove domain + TLD
-    if (parts.length > 2) {
-      return parts.slice(parts.length - 2).join(".");
-    }
-    return hostname;
-  } catch (error) {
+    const urlObj = new URL(url);
+    const parts = urlObj.hostname.split(".").filter((p) => p !== "");
+    return parts.slice(-2).join("."); // Get last two parts
+  } catch {
     return null;
   }
 }
 
-/**
- * Handle activation of a new tab.
- * 1. We get the newly activated tab's URL.
- * 2. Extract its root domain.
- * 3. If it's different from our global currentRootDomain, we update and log it.
- */
-chrome.tabs.onActivated.addListener((activeInfo) => {
-    currentTabId = activeInfo.tabId;
-  
-    chrome.tabs.get(activeInfo.tabId, (tab) => {
-      if (tab?.url) {
-        const newRootDomain = getRootDomain(tab.url);
-  
-        if (newRootDomain && newRootDomain !== currentRootDomain) {
-          console.log(
-            `Active tab changed: root domain from '${currentRootDomain}' to '${newRootDomain}'.`
-          );
-          currentRootDomain = newRootDomain;
-  
-          // Check if the domain exists in the database
-          fetch(config + "/check_root_url/" + currentRootDomain)
-            .then((res) => res.json())
-            .then((data) => {
-              console.log(data.exists);
-              if (data.exists) {
-                // Update myData if the domain exists
-                myData = true;
-              } else {
-                // If it doesn't exist, call POST
-                myData = false;
-                return fetch(`${config}/websites`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    website: currentRootDomain,
-                  }),
-                });
-              }
-            })
-            .then((res) => {
-              if (res) {
-                if (!res.ok) {
-                  return res.json().then((errData) => {
-                    throw new Error(
-                      `Server error ${res.status}: ${
-                        errData.detail || JSON.stringify(errData)
-                      }`
-                    );
-                  });
-                }
-                return res.json();
-              }
-            })
-            .then((postResponse) => {
-              if (postResponse) {
-                console.log("POST /websites success:", postResponse);
-              }
-            })
-            .catch((error) => {
-              console.error("Error posting website:", error);
-            });
-        }
-      }
-    });
-  });
-  
-
-/**
- * Handle updates in the currently active tab (e.g., user navigates to a new site).
- * Only respond if:
- *   1. The updated tab is the *active* tab, AND
- *   2. The root domain actually changed.
- */
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    // We only care if the updated tab is the current active tab
-    if (tabId === currentTabId && changeInfo.url) {
-      const newRootDomain = getRootDomain(changeInfo.url);
-  
-      if (newRootDomain && newRootDomain !== currentRootDomain) {
-        console.log(
-          `Active tab domain changed: '${currentRootDomain}' → '${newRootDomain}'.`
-        );
-        currentRootDomain = newRootDomain;
-  
-        // Check if the domain exists in the database
-        fetch(config + "/check_root_url/" + currentRootDomain)
-          .then((res) => res.json())
-          .then((data) => {
-            console.log(data.exists);
-  
-            if (data.exists) {
-              // If the domain exists, update myData
-              myData = true;
-            } else {
-              // If the domain doesn't exist, call POST
-              myData = false;
-              return fetch(`${config}/websites`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  website: currentRootDomain,
-                }),
-              });
-            }
-          })
-          .then((res) => {
-            if (res) {
-              if (!res.ok) {
-                return res.json().then((errData) => {
-                  throw new Error(
-                    `Server error ${res.status}: ${
-                      errData.detail || JSON.stringify(errData)
-                    }`
-                  );
-                });
-              }
-              return res.json();
-            }
-          })
-          .then((postResponse) => {
-            if (postResponse) {
-              console.log("POST /websites success:", postResponse);
-            }
-          })
-          .catch((error) => {
-            console.error("Error in onUpdated logic:", error);
-          });
-      }
+async function addURL(domain) {
+  try {
+    // Basic validation
+    if (!domain || !domain.includes(".")) {
+      console.error("Invalid domain:", domain);
+      return { error: "Invalid domain format" };
     }
-  });
 
- // Listen for the browser action being clicked
-chrome.browserAction.onClicked.addListener((tab) => {
-  // Inject the content script into the active tab
-  chrome.tabs.executeScript(tab.id, { file: "content.js" });
-});
+    const response = await fetch(`${config_url}add_website`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ website: domain }),
+      // Important for long requests
+      signal: AbortSignal.timeout(45000), // 45 second timeout
+    });
 
-// Optional: Add a context menu item
-chrome.contextMenus.create({
-  title: "Show Popup",
-  contexts: ["all"],
-  onclick: (info, tab) => {
-    chrome.tabs.executeScript(tab.id, { file: "content.js" });
-  },
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Server error:", error);
+      return { error: error.detail || "Request failed" };
+    }
+
+    return await response.json();
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.error("Request timed out");
+      return { error: "Request took too long - try again later" };
+    }
+    console.error("Network error:", err);
+    return { error: "Network connection failed" };
+  }
+}
+// Check if domain is new with our API
+async function checkURL(domain) {
+  try {
+    if (!domain.includes(".")) {
+      return;
+    }
+    const response = await fetch(`${config_url}check_root_url/${domain}`);
+    const result = await response.json();
+    console.log("API response:", result, domain);
+    return result.exists;
+  } catch (error) {
+    console.error("Failed to check domain:", error);
+  }
+}
+
+// Handle tab changes
+async function handleTabUpdate(tabId) {
+  try {
+    // Get current tab info
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab.url) return;
+
+    // Get simple domain format
+    const domain = getRootDomain(tab.url);
+    if (!domain) return;
+
+    if (checkedDomains.has(domain)) {
+      return true;
+    }
+    // Only check new domains
+    checkedDomains.add(domain);
+    const exists = await checkURL(domain);
+    if (!exists) {
+      const res = await addURL(domain);
+      console.log(res);
+    }
+  } catch (error) {
+    console.error("Tab error:", error);
+  }
+}
+
+// Listen for these two events:
+// 1. When user switches tabs
+chrome.tabs.onActivated.addListener((info) => handleTabUpdate(info.tabId));
+
+// 2. When website URL changes in current tab
+chrome.tabs.onUpdated.addListener((tabId, change) => {
+  if (change.url) handleTabUpdate(tabId);
 });
