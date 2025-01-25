@@ -1,42 +1,112 @@
-/* Modal container */
+/* ---------------------------------------------------------
+   Import fonts from Google Fonts
+--------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Protest+Strike&display=swap');
+
+/* ---------------------------------------------------------
+   Overlay (dark semi-transparent background)
+--------------------------------------------------------- */
+.background-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Dark semi-transparent overlay */
+  backdrop-filter: blur(10px);    /* Applies blur to the background */
+  z-index: 9999;                 /* Behind the modal */
+}
+
+/* ---------------------------------------------------------
+   Modal container
+--------------------------------------------------------- */
 .popup-modal {
-    position: fixed;
-    top: 5%;
-    left: 5%;
-    width: 90%;
-    height: 90%;
-    background: rgba(255, 248, 220, 0.95); /* Light cream color */
-    border-radius: 20px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25); /* Subtle shadow */
-    z-index: 10000; /* Ensure it appears above other elements */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-  
-  /* Title inside the popup */
-  .popup-title {
-    font-size: 2rem;
-    margin-bottom: 20px;
-    color: #000; /* Black text */
-  }
-  
-  /* Close button */
-  .popup-button {
-    padding: 15px 30px;
-    background: #a9741e; /* Gold-like color */
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .popup-button:hover {
-    background: #814c15; /* Darker gold on hover */
-  }
-  
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 500px;
+  max-width: 90%;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  padding: 12px;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+/* ---------------------------------------------------------
+   Title section
+--------------------------------------------------------- */
+.popup-title {
+  font-family: 'Protest Strike', serif;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: left;
+  color: #000;
+}
+
+/* Separator under the title */
+.popup-title::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 2px;
+  background-color: #FEBF3C; /* Gold-like color */
+  margin: 4px 0;            /* Minimize spacing around the separator */
+}
+
+/* ---------------------------------------------------------
+   Text content
+--------------------------------------------------------- */
+.popup-content {
+  font-size: 1.2rem;
+  font-family: 'Roboto', Arial, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  text-align: left;
+  margin: 0;
+  padding-bottom: 1rem;
+}
+
+/* ---------------------------------------------------------
+   Buttons container
+--------------------------------------------------------- */
+.popup-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* ---------------------------------------------------------
+   Button styling
+--------------------------------------------------------- */
+.popup-button {
+  flex: 1;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s;
+}
+
+/* "Leave" button */
+.popup-button.leave {
+  background-color: #9B7103; /* Darker gold */
+  color: #fff;
+}
+.popup-button.leave:hover {
+  background-color: #9B7103; /* Slightly darker on hover */
+}
+
+/* "Continue" button */
+.popup-button.continue {
+  background-color: #7E4C04; /* Gold-like color */
+  color: #fff;
+}
+.popup-button.continue:hover {
+  background-color: #7E4C04; /* Slightly darker on hover */
+}
