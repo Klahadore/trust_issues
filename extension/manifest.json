@@ -3,6 +3,16 @@
     "description" : "reads terms and conditions to ensure safe policy",
     "version": "1.0.0",
     "manifest_version" : 3,
+    "permissions": [
+        "tabs", "storage"
+    ],
+    "host_permissions": [
+        "http://*/*",
+        "https://*/*"
+    ],
+    "background":{
+        "service_worker": "background.js"
+    },
     "action":{
         "default_popup": "template_popup.html"
     }
