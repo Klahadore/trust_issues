@@ -4,7 +4,8 @@ from urllib.parse import urlsplit
 from database import MongoDBManager
 from pydantic import BaseModel
 from web_scraper import scraper_pipeline
-
+from typing import List
+from datetime import datetime
 app = FastAPI()
 
 def validate_root_url(url: str) -> str:
@@ -81,7 +82,7 @@ class WebsiteRequest(BaseModel):
     website: str
 
 # Updated POST endpoint
-@app.post("/websites",
+@app.post("/add_website",
           status_code=status.HTTP_201_CREATED,
           response_model=Dict[str, Union[str, bool]])
 def add_website(request: WebsiteRequest):
@@ -134,4 +135,45 @@ def add_website(request: WebsiteRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Server error: {str(e)}"
+        )
+
+
+
+
+# Add response model for website data
+class WebsiteResponse(BaseModel):
+    id: str
+    url: str
+    message: str
+    created_at: datetime
+
+@app.get("/websites",
+         response_model=List[WebsiteResponse],
+         response_description="List of all monitored websites")
+def get_all_websites():
+    """
+    Retrieve all websites from the database
+    Returns complete list of monitored websites with their warnings
+    """
+    try:
+        with MongoDBManager() as db:
+            websites = db.get_all_websites()
+
+            if not websites:
+                return []
+
+            # Convert to response model format
+            return [
+                {
+                    "id": site["_id"],
+                    "url": site["url"],
+                    "message": site["message"],
+                    "created_at": site["created_at"]
+                } for site in websites
+            ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve websites: {str(e)}"
         )
