@@ -94,7 +94,7 @@ def get_warning(root_url: str):
 
 # Request model for POST body
 
-@app.post("/websites",
+@app.post("/add_website",
           status_code=status.HTTP_201_CREATED,
           response_model=WebsiteResponse)
 def add_website(request: WebsiteRequest):
@@ -146,7 +146,7 @@ def add_website(request: WebsiteRequest):
 
 # Add response model for website data
 
-@app.get("/websites",
+@app.get("/get_websites",
          response_model=List[WebsiteResponse],
          response_description="List of all monitored websites")
 def get_all_websites():

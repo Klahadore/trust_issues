@@ -28,6 +28,11 @@ class DefaultSchema(BaseModel):
     privacy_policy: str
     terms_and_conditions: str
 
+class Default_Return_Schema(BaseModel):
+    message: str
+    extended_message: str
+
+
 def scrape_root_url(url: str, schema):
     data = app.extract([url], {'prompt': '', 'schema': schema.model_json_schema()})
 
@@ -80,8 +85,6 @@ def validate_url(input_url: Optional[str], root_url: str) -> str:
 
     return combined
 
-class return_schema(BaseModel):
-    pass
 
 def scraper_pipeline(root_url: str):
     root_url = validate_url(None, root_url)
@@ -107,9 +110,12 @@ def scraper_pipeline(root_url: str):
     ])
 
     prompt = flagging_template.invoke({'terms_and_conditions': terms_and_conditions_text, 'privacy_policy': privacy_policy_text})
-    response = llm.invoke(prompt)
 
-    return response.content
+    structured_llm = llm.with_structured_output(Default_Return_Schema)
+
+    response = structured_llm.invoke(prompt)
+
+    return (response.message, response.extended_message)
 
 if __name__ == "__main__":
     # root_url = "https://google.com"
