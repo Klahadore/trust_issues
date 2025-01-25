@@ -1,19 +1,28 @@
 import os
 from dotenv import load_dotenv
 from langchain_openai.chat_models.base import BaseChatOpenAI
-firecrawl_api_key = os.getenv("FIRECRAWL_API_KEY")
-deepseek_api_key = os.getenv("OPENAI_API_KEY")
 
+# Load environment variables FIRST
+load_dotenv()  # Make sure this is called before accessing os.getenv()
+
+# Verify keys are loading correctly
+deepseek_api_key = os.getenv("OPENAI_API_KEY")
+print(f"API Key loaded: {bool(deepseek_api_key)}")  # Should show True
+
+# Initialize LLM with proper configuration
 llm = BaseChatOpenAI(
-    model='deepseek-chat', 
-    openai_api_key= deepseek_api_key, 
-    openai_api_base='https://api.deepseek.com',
+    model='deepseek-chat',
+    api_key=deepseek_api_key,  # Now properly set
+    base_url='https://api.deepseek.com/',  # Added /v1 to endpoint
     max_tokens=1024
 )
 
-
-response = llm.invoke("Hi!")
-print(response.content)
+# Test call
+try:
+    response = llm.invoke("Hi!")
+    print(response.content)
+except Exception as e:
+    print(f"Error: {e}")
 
 # flagging_template = PromptTemplate(
 #     input_variables=["text"],
