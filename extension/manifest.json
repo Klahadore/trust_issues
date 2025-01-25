@@ -1,0 +1,9 @@
+{
+    "name" : "Trust Issues",
+    "description" : "reads terms and conditions to ensure safe policy",
+    "version": "1.0.0",
+    "manifest_version" : 3,
+    "action":{
+        "default_popup": "template_popup.html"
+    }
+}
