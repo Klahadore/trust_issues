@@ -73,49 +73,52 @@ def get_warning(root_url: str):
             detail=f"Database error: {str(e)}"
         )
 
-class WebsiteCreateRequest(BaseModel):
-    message: str
 
-# Update the POST endpoint
-@app.post("/add_website/{root_url}",
-         status_code=status.HTTP_201_CREATED,
-         response_model=Dict[str, Union[str, bool]])
-def add_website(root_url: str):
+
+
+# Request model for POST body
+class WebsiteRequest(BaseModel):
+    website: str
+
+# Updated POST endpoint
+@app.post("/websites",
+          status_code=status.HTTP_201_CREATED,
+          response_model=Dict[str, Union[str, bool]])
+def add_website(request: WebsiteRequest):
     """
-    Add a new website to the database using scraper pipeline
-    Returns created website ID and URL
+    Add a new website using scraper pipeline
+    Returns created entry with server-generated message
     """
     try:
-        normalized_url = validate_root_url(root_url)
+        # Validate and normalize URL from request body
+        normalized_url = validate_root_url(request.website)
 
         with MongoDBManager() as db:
-            # Check for existing website first
+            # Check for existing entry
             if db.website_exists(normalized_url):
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Website already exists in database"
                 )
 
+            # Generate message through scraper pipeline
             try:
-                # Call scraper pipeline to generate message
                 message = scraper_pipeline(normalized_url)
-
                 if not message:
                     raise ValueError("Scraper returned empty message")
-
-            except Exception as scrape_error:
+            except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Scraping failed: {str(scrape_error)}"
+                    detail=f"Scraping failed: {str(e)}"
                 )
 
-            # Insert new website with scraped message
+            # Insert into database
             website_id = db.add_website(normalized_url, message)
 
             if not website_id:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create website entry"
+                    detail="Failed to create database entry"
                 )
 
             return {
@@ -125,7 +128,7 @@ def add_website(root_url: str):
                 "success": True
             }
 
-    except HTTPException as he:
+    except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
