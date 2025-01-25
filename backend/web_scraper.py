@@ -18,7 +18,7 @@ llm = BaseChatOpenAI(
     model='deepseek-chat',
     api_key=deepseek_api_key,  # Now properly set
     base_url='https://api.deepseek.com/',  # Added /v1 to endpoint
-    max_tokens=1024
+    max_tokens=8000
 )
 
 
@@ -34,8 +34,8 @@ class Default_Return_Schema(BaseModel):
 
 
 def scrape_root_url(url: str, schema):
-    data = app.extract([url], {'prompt': '', 'schema': schema.model_json_schema()})
-
+    data = app.extract([url], {'prompt': 'Look in the footer of the website. links that are just privacy, privacy policy, are the same. terms of use, terms and conditions, are the same', 'schema': schema.model_json_schema()})
+    print(data)
     return data
 
 def scrape_for_markdown(url: str):
@@ -92,7 +92,8 @@ def scraper_pipeline(root_url: str):
 
     privacy_policy_url = validate_url(scrape_root['data']['privacy_policy'], root_url)
     terms_and_conditions_url = validate_url(scrape_root['data']['terms_and_conditions'], root_url)
-
+    print(privacy_policy_url)
+    print(terms_and_conditions_url)
     terms_and_conditions_text = scrape_for_markdown(terms_and_conditions_url)['markdown']
     privacy_policy_text = scrape_for_markdown(privacy_policy_url)['markdown']
 
@@ -127,6 +128,6 @@ if __name__ == "__main__":
     # scrape_policy = scrape_for_markdown(privacy_policy_url)
     # print(scrape_terms['markdown'])
     #
-    print(scraper_pipeline("ebay.com"))
+    print(scraper_pipeline("databricks.com"))
 
     # print(validate_url("/terms", "google.com"))
