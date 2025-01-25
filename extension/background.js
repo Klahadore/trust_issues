@@ -25,26 +25,67 @@ function getRootDomain(urlStr) {
  * 3. If it's different from our global currentRootDomain, we update and log it.
  */
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  // Step 1: Update our currentTabId to the newly active tab
-  currentTabId = activeInfo.tabId;
-
-  // Step 2: Get that tab's URL
-  chrome.tabs.get(activeInfo.tabId, (tab) => {
-    if (tab?.url) {
-      const newRootDomain = getRootDomain(tab.url);
-      // Step 3: Compare with currentRootDomain
-      if (newRootDomain && newRootDomain !== currentRootDomain) {
-        console.log(
-          `Active tab changed: root domain from '${currentRootDomain}' to '${newRootDomain}'.`,
-        );
-        currentRootDomain = newRootDomain;
-        fetch(config + "/check_root_url/" + currentRootDomain)
-          .then((res) => res.json())
-          .then((data) => console.log(data));
+    currentTabId = activeInfo.tabId;
+  
+    chrome.tabs.get(activeInfo.tabId, (tab) => {
+      if (tab?.url) {
+        const newRootDomain = getRootDomain(tab.url);
+  
+        if (newRootDomain && newRootDomain !== currentRootDomain) {
+          console.log(
+            `Active tab changed: root domain from '${currentRootDomain}' to '${newRootDomain}'.`
+          );
+          currentRootDomain = newRootDomain;
+  
+          // Check if the domain exists in the database
+          fetch(config + "/check_root_url/" + currentRootDomain)
+            .then((res) => res.json())
+            .then((data) => {
+              console.log(data.exists);
+              if (data.exists) {
+                // Update myData if the domain exists
+                myData = true;
+              } else {
+                // If it doesn't exist, call POST
+                myData = false;
+                return fetch(`${config}/websites`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    website: currentRootDomain,
+                  }),
+                });
+              }
+            })
+            .then((res) => {
+              if (res) {
+                if (!res.ok) {
+                  return res.json().then((errData) => {
+                    throw new Error(
+                      `Server error ${res.status}: ${
+                        errData.detail || JSON.stringify(errData)
+                      }`
+                    );
+                  });
+                }
+                return res.json();
+              }
+            })
+            .then((postResponse) => {
+              if (postResponse) {
+                console.log("POST /websites success:", postResponse);
+              }
+            })
+            .catch((error) => {
+              console.error("Error posting website:", error);
+            });
+        }
       }
-    }
+    });
   });
-});
+  
 
 /**
  * Handle updates in the currently active tab (e.g., user navigates to a new site).
@@ -53,14 +94,62 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
  *   2. The root domain actually changed.
  */
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // We only care if the updated tab is the current active tab
-  if (tabId === currentTabId && changeInfo.url) {
-    const newRootDomain = getRootDomain(changeInfo.url);
-    if (newRootDomain && newRootDomain !== currentRootDomain) {
-      console.log(
-        `Active tab domain changed: '${currentRootDomain}' → '${newRootDomain}'.`,
-      );
-      currentRootDomain = newRootDomain;
+    // We only care if the updated tab is the current active tab
+    if (tabId === currentTabId && changeInfo.url) {
+      const newRootDomain = getRootDomain(changeInfo.url);
+  
+      if (newRootDomain && newRootDomain !== currentRootDomain) {
+        console.log(
+          `Active tab domain changed: '${currentRootDomain}' → '${newRootDomain}'.`
+        );
+        currentRootDomain = newRootDomain;
+  
+        // Check if the domain exists in the database
+        fetch(config + "/check_root_url/" + currentRootDomain)
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data.exists);
+  
+            if (data.exists) {
+              // If the domain exists, update myData
+              myData = true;
+            } else {
+              // If the domain doesn't exist, call POST
+              myData = false;
+              return fetch(`${config}/websites`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  website: currentRootDomain,
+                }),
+              });
+            }
+          })
+          .then((res) => {
+            if (res) {
+              if (!res.ok) {
+                return res.json().then((errData) => {
+                  throw new Error(
+                    `Server error ${res.status}: ${
+                      errData.detail || JSON.stringify(errData)
+                    }`
+                  );
+                });
+              }
+              return res.json();
+            }
+          })
+          .then((postResponse) => {
+            if (postResponse) {
+              console.log("POST /websites success:", postResponse);
+            }
+          })
+          .catch((error) => {
+            console.error("Error in onUpdated logic:", error);
+          });
+      }
     }
-  }
-});
+  });
+  
