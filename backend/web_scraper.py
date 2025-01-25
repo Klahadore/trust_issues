@@ -15,12 +15,7 @@ class DefaultSchema(BaseModel):
     terms_and_conditions: str
 
 def scrape_root_url(url: str, schema):
-    data = app.extract([
-        url
-    ], {
-        'prompt': '',
-        'schema': schema.model_json_schema(),
-    })
+    data = app.extract([url], {'prompt': '', 'schema': schema.model_json_schema()})
 
     return data
 

@@ -1,9 +1,19 @@
 {
-    "name" : "Trust Issues",
-    "description" : "reads terms and conditions to ensure safe policy",
-    "version": "1.0.0",
-    "manifest_version" : 3,
-    "action":{
-        "default_popup": "template_popup.html"
+  "manifest_version": 3,
+  "name": "Terms Analyzer",
+  "version": "1.0",
+  "permissions": ["activeTab", "tabs", "webNavigation", "scripting"],
+  "host_permissions": ["*://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content-script.js"]
     }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html"
+  }
 }
