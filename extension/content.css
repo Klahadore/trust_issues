@@ -1,0 +1,42 @@
+/* Modal container */
+.popup-modal {
+    position: fixed;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    background: rgba(255, 248, 220, 0.95); /* Light cream color */
+    border-radius: 20px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25); /* Subtle shadow */
+    z-index: 10000; /* Ensure it appears above other elements */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Title inside the popup */
+  .popup-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #000; /* Black text */
+  }
+  
+  /* Close button */
+  .popup-button {
+    padding: 15px 30px;
+    background: #a9741e; /* Gold-like color */
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .popup-button:hover {
+    background: #814c15; /* Darker gold on hover */
+  }
+  
