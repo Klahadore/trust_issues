@@ -98,7 +98,7 @@ def scraper_pipeline(root_url: str):
             'system',
             'You are a helpful lawyer who is reviewing these terms and conditions, and privacy policies for '
             'potential data misuse that is not clear to the user. Warn your client of the top three things you see '
-            'in a few concise sentences.'
+            'in a simple and concise sentence.'
         ),
         (
             'human',
