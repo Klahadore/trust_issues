@@ -4,16 +4,13 @@
     "version": "1.0.0",
     "manifest_version" : 3,
     "permissions": [
-        "tabs", "storage"
+        "tabs", "storage","scripting","activeTab", "contextMenus"
     ],
     "host_permissions": [
         "http://*/*",
         "https://*/*"
     ],
     "background":{
-        "service_worker": "background.js"
-    },
-    "action":{
-        "default_popup": "template_popup.html"
+        "scripts": "background.js"
     }
 }

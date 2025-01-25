@@ -1,0 +1,45 @@
+/* General reset */
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex; /* Flexbox for centering */
+    align-items: center; /* Vertically center */
+    justify-content: center; /* Horizontally center */
+    background: transparent; /* Transparent background */
+  }
+  
+  /* Popup container */
+  .popup {
+    width: 400px;
+    padding: 30px;
+    background: rgba(255, 248, 220, 0.85); /* Semi-transparent cream */
+    border-radius: 20px; /* Rounded corners */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25); /* Subtle shadow */
+    text-align: center;
+  }
+  
+  
+  /* Title styling */
+  .popup h2 {
+    font-size: 24px;
+    color: #000; /* Black text */
+    margin: 0;
+  }
+  
+  /* Button styling */
+  .continue-button {
+    padding: 10px 20px;
+    background: #a9741e; /* Gold-like color */
+    color: #fff; /* White text */
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .continue-button:hover {
+    background: #814c15; /* Darker gold on hover */
+  }
+  

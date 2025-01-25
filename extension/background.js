@@ -152,4 +152,18 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       }
     }
   });
-  
+
+ // Listen for the browser action being clicked
+chrome.browserAction.onClicked.addListener((tab) => {
+  // Inject the content script into the active tab
+  chrome.tabs.executeScript(tab.id, { file: "content.js" });
+});
+
+// Optional: Add a context menu item
+chrome.contextMenus.create({
+  title: "Show Popup",
+  contexts: ["all"],
+  onclick: (info, tab) => {
+    chrome.tabs.executeScript(tab.id, { file: "content.js" });
+  },
+});
