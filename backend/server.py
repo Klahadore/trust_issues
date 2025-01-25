@@ -2,6 +2,8 @@ from typing import Dict, Union
 from fastapi import FastAPI, HTTPException, status
 from urllib.parse import urlsplit
 from database import MongoDBManager
+from pydantic import BaseModel
+from web_scraper import scraper_pipeline
 
 app = FastAPI()
 
@@ -71,5 +73,49 @@ def get_warning(root_url: str):
             detail=f"Database error: {str(e)}"
         )
 
+class WebsiteCreateRequest(BaseModel):
+    message: str
 
+# Update the POST endpoint
+@app.post("/add_website/{root_url}",
+          status_code=status.HTTP_201_CREATED,
+          response_model=Dict[str, Union[str, bool]])
+def add_website(root_url: str, data: WebsiteCreateRequest):
+    """
+    Add a new website to the database
+    Returns created website ID and URL
+    """
+    try:
+        normalized_url = validate_root_url(root_url)
+
+        with MongoDBManager() as db:
+            # Check for existing website first
+            if db.website_exists(normalized_url):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Website already exists in database"
+                )
+
+            # Insert new website
+            website_id = db.add_website(normalized_url, data.message)
+
+            if not website_id:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to create website entry"
+                )
+
+            return {
+                "id": website_id,
+                "url": normalized_url,
+                "success": True
+            }
+
+    except HTTPException as he:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server error: {str(e)}"
+        )
 # Update MongoDBManager to support context manager

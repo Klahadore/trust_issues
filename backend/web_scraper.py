@@ -2,11 +2,24 @@ from firecrawl import FirecrawlApp
 from pydantic import BaseModel, Field
 from typing import Any, Optional, List
 from urllib.parse import urlsplit, urlunsplit, urljoin
+from langchain_openai.chat_models.base import BaseChatOpenAI
 
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+deepseek_api_key = os.getenv("OPENAI_API_KEY")
+print(f"API Key loaded: {bool(deepseek_api_key)}")  # Should show True
+
+# Initialize LLM with proper configuration
+llm = BaseChatOpenAI(
+    model='deepseek-chat',
+    api_key=deepseek_api_key,  # Now properly set
+    base_url='https://api.deepseek.com/',  # Added /v1 to endpoint
+    max_tokens=1024
+)
+
 
 app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
 
@@ -65,6 +78,14 @@ def validate_url(input_url: str, root_url: str) -> str:
         return urlunsplit(parsed_combined._replace(scheme='https'))
 
     return combined
+
+class return_schema(BaseModel):
+    pass
+
+def scraper_pipeline(base_url: str):
+    pass
+
+
 
 if __name__ == "__main__":
     root_url = "https://google.com"
