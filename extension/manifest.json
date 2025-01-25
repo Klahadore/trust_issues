@@ -1,4 +1,5 @@
 {
+
   "name": "Trust Issues",
   "description": "reads terms and conditions to ensure safe policy",
   "version": "1.0.0",
@@ -16,6 +17,7 @@
       "matches": ["http://*/*", "https://*/*"],
       "js": ["content.js"],
       "run_at": "document_end"
+
     }
   ]
 }
