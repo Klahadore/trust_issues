@@ -1,5 +1,7 @@
 let currentTabId = null;
 let currentRootDomain = null;
+let config = "http://0.0.0.0:8000";
+let myData = null;
 
 function getRootDomain(urlStr) {
   try {
@@ -36,9 +38,11 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
           `Active tab changed: root domain from '${currentRootDomain}' to '${newRootDomain}'.`
         );
         currentRootDomain = newRootDomain;
-      }
-    }
-  });
+        fetch(config + "/check_root_url/" + currentRootDomain)
+            .then(res => console.log(res))
+        }
+        }
+    });
 });
 
 /**
