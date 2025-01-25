@@ -4,6 +4,7 @@ from typing import Any, Optional, List
 from urllib.parse import urlsplit, urlunsplit, urljoin
 from langchain_openai.chat_models.base import BaseChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 import os
 from dotenv import load_dotenv
@@ -179,12 +180,33 @@ def scraper_pipeline(root_url: str):
         privacy_policy_url, terms_url = get_URLS(raw_urls)
     except:
         print(f"couldn't scrape root url {root_url}, return AI generated message")
-        simple_template = ChatPromptTemplate([
-            ('system', "You are a helpful lawyer who is reviewing these terms and conditions, and privacy policies for potential data and trust misues that is not clear to the user, warn the client of the top three things you see for the given website. With a slight bias for negativity. Expose the websites. Be concise. "),
-            ('human', "For the website {root_url}, please give me a short message being as concise, and as sharp as possible, and an extended message with more nuance, explaining what is going on. ")
-        ])
+        speculative_prompt = PromptTemplate.from_template(
+            """As a consumer rights watchdog, recall 3 exploitative practices for {root_url} based on industry patterns.
+            Output JSON with structure:
+            {{
+                "message": "3 bullet points\\n- [Issue 1]\\n- [Issue 2]\\n- [Issue 3]",
+                "extended_message": "Analysis assuming worst-case industry standards"
+            }}
 
-        prompt = simple_template.invoke({'root_url': root_url})
+            Inference Rules:
+            1. Assume dark patterns common to this domain:
+               - Streaming: auto-renewals, content removal clauses
+               - E-commerce: restocking fees, return windows
+               - Social: data scraping, shadow profiles
+            2. For {root_url}, focus on their business model's likely abuses
+            3. Be sure, don't use words such as "likely", or "probably"
+
+            Example for "https://example-shop.com":
+            {{
+                "message": "- Likely 30% restocking fee hidden in FAQ\\n- Probable third-party data sharing for ads\\n- Suspected subscription auto-renewal by default",
+                "extended_message": "While unconfirmed, most retailers in this space..."
+            }}
+
+            Generate for {root_url} (JSON ONLY):"""
+        )
+
+
+        prompt = speculative_prompt.invoke({'root_url': root_url})
         response = structured_llm.invoke(prompt)
         return (response.message, response.extended_message)
 
@@ -193,21 +215,45 @@ def scraper_pipeline(root_url: str):
     terms_and_conditions_text = scrape_for_markdown(terms_url)['markdown']
     privacy_policy_text = scrape_for_markdown(privacy_policy_url)['markdown']
 
-    flagging_template = ChatPromptTemplate([
-        (
-            'system',
-            'You are a helpful lawyer who is reviewing these terms and conditions, and privacy policies for '
-            'potential data misuse that is not clear to the user. Warn your client of the top three things you see '
-            'in a simple and concise sentence.'
-        ),
-        (
-            'human',
-            'Here are the terms and conditions: {terms_and_conditions}, and here is the privacy policy: {privacy_policy}.'
-        )
-    ])
 
-    prompt = flagging_template.invoke({'terms_and_conditions': terms_and_conditions_text, 'privacy_policy': privacy_policy_text})
+    schema_enforcement_prompt = PromptTemplate.from_template(
+        """You are a ruthless consumer rights lawyer analyzing these policies.
+        You MUST output JSON matching this exact structure:
+        {{
+            "message": "Three bullet points:\\n- First issue\\n- Second issue\\n- Third issue",
+            "extended_message": "Detailed markdown analysis with headers"
+        }}
 
+        Policies:
+        TERMS: {terms_and_conditions}
+        PRIVACY: {privacy_policy}
+
+        RULES:
+        1. "message" must have exactly 3 plain text bullet points
+        2. "extended_message" must use ## headers and - lists
+        3. Never use colons or unescaped quotes in JSON values
+        4. Output must parse with json.loads() FIRST TRY
+
+        If you aren't given anything useful in the terms and privacy policies:
+            Here is the name of the website: {root_url}
+            Recall the privacy policy and terms from memory. Be truthful to the name of the website.
+
+        Example VALID response:
+        {{
+            "message": "- Hidden fees in §3.2\\n- Data sold to 3rd parties\\n- 90-day cancellation process",
+            "extended_message": "## Financial Deception...\\n- Section 3.2 hides..."
+        }}
+
+        YOUR ANALYSIS (ONLY OUTPUT VALID JSON):
+        """
+    )
+
+    # Test invocation
+    prompt = schema_enforcement_prompt.invoke({
+        "terms_and_conditions": terms_and_conditions_text,
+        "privacy_policy": privacy_policy_text,
+        "root_url": root_url
+    })
     response = structured_llm.invoke(prompt)
 
     # Check if response failed
@@ -239,4 +285,4 @@ if __name__ == "__main__":
     #     print(url)
 
     # print(get_terms_URLS(found_policy_urls))
-    print(scraper_pipeline("linkedin.com"))
+    print(scraper_pipeline("kraftheinz.com"))
