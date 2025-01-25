@@ -78,11 +78,11 @@ class WebsiteCreateRequest(BaseModel):
 
 # Update the POST endpoint
 @app.post("/add_website/{root_url}",
-          status_code=status.HTTP_201_CREATED,
-          response_model=Dict[str, Union[str, bool]])
-def add_website(root_url: str, data: WebsiteCreateRequest):
+         status_code=status.HTTP_201_CREATED,
+         response_model=Dict[str, Union[str, bool]])
+def add_website(root_url: str):
     """
-    Add a new website to the database
+    Add a new website to the database using scraper pipeline
     Returns created website ID and URL
     """
     try:
@@ -96,8 +96,21 @@ def add_website(root_url: str, data: WebsiteCreateRequest):
                     detail="Website already exists in database"
                 )
 
-            # Insert new website
-            website_id = db.add_website(normalized_url, data.message)
+            try:
+                # Call scraper pipeline to generate message
+                message = scraper_pipeline(normalized_url)
+
+                if not message:
+                    raise ValueError("Scraper returned empty message")
+
+            except Exception as scrape_error:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Scraping failed: {str(scrape_error)}"
+                )
+
+            # Insert new website with scraped message
+            website_id = db.add_website(normalized_url, message)
 
             if not website_id:
                 raise HTTPException(
@@ -108,6 +121,7 @@ def add_website(root_url: str, data: WebsiteCreateRequest):
             return {
                 "id": website_id,
                 "url": normalized_url,
+                "message": message,
                 "success": True
             }
 
@@ -118,4 +132,3 @@ def add_website(root_url: str, data: WebsiteCreateRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Server error: {str(e)}"
         )
-# Update MongoDBManager to support context manager
