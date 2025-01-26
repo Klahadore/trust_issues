@@ -1,9 +1,11 @@
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 from fastapi import FastAPI, HTTPException, status
 from urllib.parse import urlsplit
+
+from starlette.responses import Content
 from database import MongoDBManager
 from pydantic import BaseModel
-from web_scraper import scraper_pipeline
+from web_scraper import scraper_pipeline, scrape_reviews_pipeline
 from typing import List
 from datetime import datetime
 app = FastAPI()
@@ -172,6 +174,34 @@ def get_all_websites():
                 } for site in websites
             ]
 
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve websites: {str(e)}"
+        )
+
+class Analyze_Reviews_Model(BaseModel):
+    message: Optional[str]
+    extended_message: Optional[str]
+
+@app.get("/analyze-reviews/{website}", response_model=Analyze_Reviews_Model, response_description="Analyze reviews of the given website")
+def analyze_reviews(website: str):
+
+    try:
+        result = scrape_reviews_pipeline(website)
+
+        if result is None:
+            return {
+                "message": None,
+                "extended_message": None
+            }
+
+        message, extended_message = result
+        print(message)
+        return {
+            "message": message,
+            "extended_message": extended_message
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

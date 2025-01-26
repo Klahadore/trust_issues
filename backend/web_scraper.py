@@ -266,23 +266,21 @@ def scraper_pipeline(root_url: str):
 def scrape_reviews_pipeline(website: str):
     try:
         reviews = scrape_for_markdown(f"https://trustpilot.com/review/{website}")
+       # print(reviews)
+        if "https://images-static.trustpilot.com/community/errors/404_beige.png" in reviews['markdown']:
+            return None
     except:
         return None
 
-    from langchain_core.prompts import PromptTemplate
 
     review_analysis_prompt = PromptTemplate.from_template(
         """Analyze these customer reviews for {company_name} and create a security/quality risk assessment:
         \n\nREVIEWS:\n{reviews}\n\n
-        Structure your response as:
-        **Critical Concerns** (markdown)
-        - 3-5 bullet points highlighting security issues, return policy traps, or quality failures
-        **Pattern Analysis**
-        - Frequency of specific complaints (e.g. "12% mentioned unauthorized charges")
-        - Most repeated negative phrases
-        **Consumer Advice**
-        - 3 actionable warnings for potential customers
-        **Trust Score Estimate**: [1-10 rating] based on review sentiment
+        RULES:
+        1. "message" must have exactly 3 plain text bullet points
+        2. "extended_message" must use ## headers and - lists
+        3. Never use colons or unescaped quotes in JSON values
+        4. Output must parse with json.loads() FIRST TRY
 
         Focus on:
         • Financial risks (hidden fees, refund denials)
@@ -290,17 +288,17 @@ def scrape_reviews_pipeline(website: str):
         • Product/service consistency failures
         • Support responsiveness
 
-        Be concise, to the point. Avoid flowery language. Only say things that can be directly supported in the text.
+        Be concise and to the point. Avoid flowery language. Only say things that can be directly supported in the text.
         Example VALID response:
         {{
             "message": "- Products did not arrive on time \n - Customer support was terrible",
             "extended_message": "## Product tracking was not available... \n Customer support was rude and very difficult to talk to..."
         }}
-
+        If no customer reviews are available, say that there no reviews available for both fields.
        """
     )
     # hello world
-    prompt = review_analysis_prompt.invoke({'reviews': reviews, 'company_name': website})
+    prompt = review_analysis_prompt.invoke({'reviews': reviews['markdown'], 'company_name': website})
     structured_llm = llm.with_structured_output(Default_Return_Schema)
     response = structured_llm.invoke(prompt)
     return (response.message, response.extended_message)
@@ -328,4 +326,4 @@ if __name__ == "__main__":
 
     # print(get_terms_URLS(found_policy_urls))
     # print(scraper_pipeline("kraftheinz.com"))
-    print(scrape_reviews_pipeline("allbirds.com"))
+    print(scrape_reviews_pipeline("github.com"))
