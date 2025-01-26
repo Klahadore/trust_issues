@@ -13,7 +13,6 @@ load_dotenv()
 
 deepseek_api_key = os.getenv("OPENAI_API_KEY")
 print(f"API Key loaded: {bool(deepseek_api_key)}")  # Should show True
-groq_api_key=os.getenv("GROQ_API_KEY")
 # Initialize LLM with proper configuration
 # llm = BaseChatOpenAI(
 #     model='deepseek-chat',
@@ -24,7 +23,7 @@ groq_api_key=os.getenv("GROQ_API_KEY")
 
 llm = ChatOpenAI(
     model='gpt-4o',
-    api_key=os.getenv('OPENAI_API_KEY_2'),
+    api_key=os.getenv('OPENAI_API_KEY'),
 
 )
 

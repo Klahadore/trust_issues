@@ -27,13 +27,16 @@
     transform: translate(-50%, -50%);
     width: 550px;
     max-width: 90%;
+    max-height: 80vh;       /* Restrict the overall height of the modal */
     background: #fff;
     border-radius: 15px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
     z-index: 10000;
-    padding: 20px;
+    display: flex;          /* Stack title, content, and buttons */
+    flex-direction: column;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    font-family: "Roboto", Arial, sans-serif; /* Standardize font */
+    overflow: hidden;       /* Prevent overflow outside modal */
 }
 
 /* ---------------------------------------------------------
@@ -43,41 +46,48 @@
     font-family: "Protest Strike", serif;
     font-size: 1.2rem;
     font-weight: bold;
-    text-align: left;
     color: #000;
-}
-
-/* Separator under the title */
-.popup-title::after {
-    content: "";
-    display: block;
-    width: 100%;
-    height: 2px;
-    background-color: #febf3c; /* Gold-like color */
-    margin: 4px 0; /* Minimize spacing around the separator */
+    margin: 0;
+    padding: 20px;
+    background: #fff;
+    border-radius: 15px 15px 0 0; /* Rounded top corners */
+    border-bottom: 2px solid #febf3c; /* Separator under the title */
 }
 
 /* ---------------------------------------------------------
-   Text content
-   (Modified to incorporate paragraph/list spacing)
+   Content section
 --------------------------------------------------------- */
 .popup-content {
-    font-size: 1.2rem;
-    font-family: "Roboto", Arial, sans-serif;
-    line-height: 1.5;
-    color: #333;
+    flex: 1;              /* Allow the content to take up remaining height */
+    overflow-y: auto;     /* Enable vertical scrolling */
+    padding: 1.5rem;      /* Add padding for readability */
+    font-size: 1rem;      /* Standard font size */
+    line-height: 1.5;     /* Line height for better readability */
+    color: #333;          /* Standard text color */
     text-align: left;
-    /* Provide uniform padding around text content */
-    padding: 1rem 1.5rem;
     margin: 0;
 }
 
-/* Consistent margins for paragraphs and lists */
+/* Headings in content (Standardized sizes and spacing) */
+.popup-content h1,
+.popup-content h2,
+.popup-content h3,
+.popup-content h4,
+.popup-content h5,
+.popup-content h6 {
+    font-size: 1rem;        /* Same size for all headings */
+    font-weight: bold;      /* Consistent font weight */
+    color: #333;            /* Standard text color */
+    margin: 1rem 0 0.5rem;  /* Add space above and below */
+    line-height: 1.2;       /* Slightly tighter line spacing */
+}
+
+/* Standard margins for paragraphs and lists */
 .popup-content p,
 .popup-content ul,
 .popup-content ol {
-    margin: 1em 0; /* vertical spacing before/after paragraphs or lists */
-    padding: 0; /* remove default list padding */
+    margin: 1rem 0;
+    padding: 0;
 }
 
 /* Increase left indentation for lists */
@@ -89,7 +99,7 @@
 
 /* Add spacing between individual list items */
 .popup-content li {
-    margin: 0.5em 0;
+    margin: 0.5rem 0;
 }
 
 /* ---------------------------------------------------------
@@ -99,6 +109,10 @@
     display: flex;
     justify-content: space-between;
     gap: 10px;
+    padding: 20px; /* Add consistent padding */
+    background: #fff;
+    border-top: 2px solid #eee; /* Separator above buttons */
+    border-radius: 0 0 15px 15px; /* Match modal border radius */
 }
 
 /* ---------------------------------------------------------
@@ -107,7 +121,8 @@
 .popup-button {
     flex: 1;
     padding: 10px 20px;
-    font-size: 1rem;
+    font-size: 1rem;        /* Standard font size for buttons */
+    font-weight: bold;      /* Make text bold for emphasis */
     border: none;
     border-radius: 10px;
     cursor: pointer;
@@ -121,7 +136,7 @@
     color: #fff;
 }
 .popup-button.leave:hover {
-    background-color: #9b7103; /* Slightly darker on hover */
+    background-color: #9b7103;
 }
 
 /* "Continue" button */
@@ -130,7 +145,7 @@
     color: #fff;
 }
 .popup-button.continue:hover {
-    background-color: #7e4c04; /* Slightly darker on hover */
+    background-color: #7e4c04;
 }
 
 /* ---------------------------------------------------------
@@ -163,31 +178,21 @@
     font-weight: bold;
 }
 
-/* Add these to your existing CSS */
-.content-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
+/* ---------------------------------------------------------
+   Review section
+--------------------------------------------------------- */
 .review-section {
-    border-top: 1px solid #eee;
-    padding-top: 1.5rem;
+    border-top: 1px solid #ffffff;
+    padding-top: 1rem;
 }
 
 .review-item {
     margin-bottom: 1rem;
     padding: 1rem;
-    background: #f8f8f8;
+    background: #ffffff;
     border-radius: 4px;
 }
 
 .review-item details {
     margin-top: 0.5rem;
-}
-
-.review-section h3 {
-    margin: 0 0 1rem 0;
-    color: #333;
-    font-size: 1.1em;
 }
