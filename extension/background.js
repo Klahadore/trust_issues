@@ -13,7 +13,6 @@ function getRootDomain(url) {
     return null;
   }
 }
-
 async function addURL(domain) {
   try {
     // Basic validation

@@ -2,7 +2,9 @@
   // ---------------------------------------------------------
   // Configuration
   // ---------------------------------------------------------
-  const configUrl = "http://0.0.0.0:8000/";
+  const configUrl = "http://localhost:8000/"; 
+  // ^ Use localhost, or your machine's IP if 0.0.0.0 doesn't work in the browser
+
   const keywords = ["sign up", "continue", "register", "get started", "join now", "join"];
 
   // ---------------------------------------------------------
@@ -14,11 +16,36 @@
         return;
       }
       const response = await fetch(`${configUrl}get_warning/${domain}`);
+      // Check for HTTP errors
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const result = await response.json();
       console.log("API response:", result, domain);
-      return result.message;
+      return result;
     } catch (error) {
       console.error("Failed to check warning:", error);
+    }
+  }
+
+  function getRootDomain(url) {
+    try {
+      const urlObj = new URL(url);
+      const parts = urlObj.hostname.split(".").filter((p) => p !== "");
+      return parts.slice(-2).join("."); // Get last two parts
+    } catch {
+      return null;
+    }
+  }
+
+  function getMainDomain(url) {
+    try {
+      const urlObj = new URL(url); 
+      const parts = urlObj.hostname.split(".").filter((p) => p !== "");
+      const mainDomain = parts.length > 1 ? parts[parts.length - 2] : parts[0]; 
+      return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1); 
+    } catch {
+      return null;
     }
   }
 
@@ -27,23 +54,19 @@
   // ---------------------------------------------------------
   function waitForSpecificButtonPress() {
     return new Promise((resolve) => {
-      // Select all relevant clickable elements
       const buttons = document.querySelectorAll(
         "button, input[type='button'], input[type='submit'], a"
       );
-
-      // Attach click handlers to any button matching our keywords
       buttons.forEach((button) => {
         const text = (button.innerText || button.value || "").toLowerCase();
         const matchesKeyword = keywords.some((keyword) =>
           text.includes(keyword.toLowerCase())
         );
-
         if (matchesKeyword) {
           button.addEventListener("click", (event) => {
-            event.preventDefault(); // Stop the original button behavior
+            event.preventDefault();
             console.log(`Button clicked: "${text.trim()}"`);
-            resolve(button); // Resolve the Promise with the clicked button
+            resolve(button);
           });
         }
       });
@@ -53,13 +76,34 @@
   // ---------------------------------------------------------
   // Create modal elements and behavior
   // ---------------------------------------------------------
-  function createModal(originalButton) {
+  async function createModal(originalButton) {
     // Load CSS
     const cssLink = document.createElement("link");
     cssLink.rel = "stylesheet";
     cssLink.type = "text/css";
     cssLink.href = chrome.runtime.getURL("content.css");
     document.head.appendChild(cssLink);
+
+    // Name
+    const currentUrl = window.location.href;
+    console.log("Current URL:", currentUrl);
+    const nameUrl = getMainDomain(currentUrl);
+
+    // Get Root Domain, then fetch warnings
+    const rootDomain = getRootDomain(currentUrl);
+    console.log("Root Domain:", rootDomain);
+
+    let data;
+    try {
+      data = await checkWarning(rootDomain);
+      console.log("Fetched data:", data);
+    } catch (err) {
+      console.error("Error retrieving data:", err);
+    }
+
+    // You can now safely access data, if it exists
+    const message = data?.message || "No warning message available.";
+    const extendedMessage = data?.extended_message || "";
 
     // Create overlay
     const overlay = document.createElement("div");
@@ -74,13 +118,10 @@
 
     // Populate modal HTML
     modal.innerHTML = `
-      <h2 class="popup-title">TRUST ISSUES</h2>
+      <h2 class="popup-title">TRUST ISSUES: ${nameUrl} Analysis</h2>
       <div class="popup-content">
-        <strong>Spotify Privacy Policy and Terms of Service:</strong><br><br>
-        <strong>Possible flags:</strong> collects and uses extensive personal data, 
-        including your listening habits, device information, and location, which 
-        may not be immediately clear to users. This data is used for personalized 
-        advertising and other purposes, potentially beyond what users expect.
+        <p><strong>Message:</strong> ${message}</p>
+        <p><strong>Extended Info:</strong> ${extendedMessage}</p>
       </div>
       <div class="popup-buttons">
         <button class="popup-button leave"><strong>Leave</strong></button>
@@ -126,10 +167,9 @@
     console.log("Waiting for button press...");
     const originalButton = await waitForSpecificButtonPress();
 
-    // Only create the modal if it doesn't already exist
     if (!document.getElementById("extension-popup-modal")) {
       console.log("Creating modal...");
-      createModal(originalButton);
+      await createModal(originalButton); // await here as well
     }
   }
 
