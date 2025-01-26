@@ -66,18 +66,20 @@ def check_root_url(root_url: str):
 @app.get("/get_warning/{root_url}", response_model=WebsiteMessageResponse)
 def get_warning(root_url: str):
     """
-    Retrieve both message versions for a root URL
+    Retrieve warnings - check DB first, then scrape live if missing
     """
     try:
         normalized_url = validate_root_url(root_url)
         with MongoDBManager() as db:
             website = db.get_website(normalized_url)
 
+            # If not in DB, scrape fresh but don't persist
             if not website:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Website not found in database"
-                )
+                message, extended_message = scraper_pipeline(normalized_url)
+                return {
+                    "message": message,
+                    "extended_message": extended_message
+                }
 
             return {
                 "message": website.get("message"),
@@ -88,10 +90,8 @@ def get_warning(root_url: str):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error: {str(e)}"
+            detail=f"Error retrieving warning: {str(e)}"
         )
-
-
 
 
 # Request model for POST body
