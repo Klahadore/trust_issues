@@ -5,7 +5,7 @@ from urllib.parse import urlsplit, urlunsplit, urljoin
 from langchain_openai.chat_models.base import BaseChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import PromptTemplate
-
+from langchain_groq import ChatGroq
 import os
 from dotenv import load_dotenv
 
@@ -13,14 +13,34 @@ load_dotenv()
 
 deepseek_api_key = os.getenv("OPENAI_API_KEY")
 print(f"API Key loaded: {bool(deepseek_api_key)}")  # Should show True
-
+groq_api_key=os.getenv("GROQ_API_KEY")
 # Initialize LLM with proper configuration
 llm = BaseChatOpenAI(
     model='deepseek-chat',
-    api_key=deepseek_api_key,  # Now properly set
-    base_url='https://api.deepseek.com/',  # Added /v1 to endpoint
+    api_key=deepseek_api_key,
+    base_url='https://api.deepseek.com/',
     max_tokens=8000
 )
+
+# llm = BaseChatOpenAI(
+#     model='gpt-4o',
+#     api_key=os.getenv(OPENAI_API_KEY),
+
+# )
+
+
+# if not groq_api_key:
+#     raise ValueError("GROQ_API_KEY environment variable not set")
+
+# llm = ChatGroq(
+#     model="llama-3.3-70b-versatile",
+#     temperature=0,
+#     max_tokens=None,
+#     timeout=None,
+#     max_retries=2,
+#     api_key=groq_api_key
+#     # other params...
+# )
 
 
 app = FirecrawlApp(api_key=os.getenv('FIRECRAWL_API_KEY'))
@@ -268,9 +288,11 @@ def scrape_reviews_pipeline(website: str):
         reviews = scrape_for_markdown(f"https://trustpilot.com/review/{website}")
        # print(reviews)
         if "https://images-static.trustpilot.com/community/errors/404_beige.png" in reviews['markdown']:
-            return None
+            print("error1")
+            return None, None
     except:
-        return None
+        print("error2")
+        return None, None
 
 
     review_analysis_prompt = PromptTemplate.from_template(
@@ -326,4 +348,7 @@ if __name__ == "__main__":
 
     # print(get_terms_URLS(found_policy_urls))
     # print(scraper_pipeline("kraftheinz.com"))
+    import time
+    now = time.time()
     print(scrape_reviews_pipeline("github.com"))
+    print(time.time()-now)

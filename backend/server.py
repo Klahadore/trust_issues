@@ -1,13 +1,14 @@
 from typing import Dict, Union, Optional
 from fastapi import FastAPI, HTTPException, status
-from urllib.parse import urlsplit
-
+from urllib.parse import urlsplit, urlparse
+import asyncio
 from starlette.responses import Content
 from database import MongoDBManager
 from pydantic import BaseModel
 from web_scraper import scraper_pipeline, scrape_reviews_pipeline
 from typing import List
 from datetime import datetime
+
 app = FastAPI()
 
 class WebsiteRequest(BaseModel):
@@ -16,12 +17,13 @@ class WebsiteRequest(BaseModel):
 class WebsiteMessageResponse(BaseModel):
     message: str
     extended_message: str
+    reviews_message: Optional[str] = None
+    reviews_extended_message: Optional[str] = None
 
 class WebsiteResponse(WebsiteMessageResponse):
     id: str
     url: str
     created_at: datetime
-# Updated POST endpoint
 
 def validate_root_url(url: str) -> str:
     """Normalize URL to ensure HTTPS scheme and proper formatting"""
@@ -33,12 +35,10 @@ def validate_root_url(url: str) -> str:
 
     parsed = urlsplit(url)
 
-    # Add scheme if missing
     if not parsed.scheme:
         url = f"https://{url.lstrip('/')}"
         parsed = urlsplit(url)
 
-    # Force HTTPS
     if parsed.scheme != 'https':
         url = parsed._replace(scheme='https').geturl()
 
@@ -73,17 +73,20 @@ def get_warning(root_url: str):
         with MongoDBManager() as db:
             website = db.get_website(normalized_url)
 
-            # If not in DB, scrape fresh but don't persist
             if not website:
                 message, extended_message = scraper_pipeline(normalized_url)
                 return {
                     "message": message,
-                    "extended_message": extended_message
+                    "extended_message": extended_message,
+                    "reviews_message": None,
+                    "reviews_extended_message": None
                 }
 
             return {
                 "message": website.get("message"),
-                "extended_message": website.get("extended_message")
+                "extended_message": website.get("extended_message"),
+                "reviews_message": website.get("reviews_message"),
+                "reviews_extended_message": website.get("reviews_extended_message")
             }
     except HTTPException:
         raise
@@ -93,13 +96,10 @@ def get_warning(root_url: str):
             detail=f"Error retrieving warning: {str(e)}"
         )
 
-
-# Request model for POST body
-
 @app.post("/add_website",
           status_code=status.HTTP_201_CREATED,
           response_model=WebsiteResponse)
-def add_website(request: WebsiteRequest):
+async def add_website(request: WebsiteRequest):
     """
     Add website with auto-generated messages
     """
@@ -114,8 +114,25 @@ def add_website(request: WebsiteRequest):
                 )
 
             try:
-                # Assume scraper returns tuple/dict with both messages
-                message, extended_message = scraper_pipeline(normalized_url)
+                # Robust domain extraction
+                extract_domain = lambda url: urlparse(url.strip()).netloc or urlparse(f"https://{url.strip()}").netloc
+                loop = asyncio.get_running_loop()
+
+                scraper_future = loop.run_in_executor(
+                    None,
+                    lambda: scraper_pipeline(normalized_url)
+                )
+
+                reviews_future = loop.run_in_executor(
+                    None,
+                    lambda: scrape_reviews_pipeline(extract_domain(normalized_url))
+                )
+
+                (message, extended_message), (reviews_message, reviews_extended_message) = await asyncio.gather(
+                    scraper_future,
+                    reviews_future
+                )
+
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -125,7 +142,9 @@ def add_website(request: WebsiteRequest):
             website_id = db.add_website(
                 url=normalized_url,
                 message=message,
-                extended_message=extended_message
+                extended_message=extended_message,
+                reviews_message=reviews_message,
+                reviews_extended_message=reviews_extended_message
             )
 
             return {
@@ -133,6 +152,8 @@ def add_website(request: WebsiteRequest):
                 "url": normalized_url,
                 "message": message,
                 "extended_message": extended_message,
+                "reviews_message": reviews_message,
+                "reviews_extended_message": reviews_extended_message,
                 "created_at": datetime.utcnow()
             }
 
@@ -144,32 +165,25 @@ def add_website(request: WebsiteRequest):
             detail=f"Server error: {str(e)}"
         )
 
-
-
-# Add response model for website data
-
 @app.get("/get_websites",
          response_model=List[WebsiteResponse],
          response_description="List of all monitored websites")
 def get_all_websites():
     """
     Retrieve all websites from the database
-    Returns complete list of monitored websites with their warnings
     """
     try:
         with MongoDBManager() as db:
             websites = db.get_all_websites()
 
-            if not websites:
-                return []
-
-            # Convert to response model format
             return [
                 {
                     "id": site["_id"],
                     "url": site["url"],
                     "message": site["message"],
                     "extended_message": site["extended_message"],
+                    "reviews_message": site["reviews_message"],
+                    "reviews_extended_message": site["reviews_extended_message"],
                     "created_at": site["created_at"]
                 } for site in websites
             ]
@@ -180,30 +194,22 @@ def get_all_websites():
             detail=f"Failed to retrieve websites: {str(e)}"
         )
 
-class Analyze_Reviews_Model(BaseModel):
-    message: Optional[str]
-    extended_message: Optional[str]
+class AnalyzeReviewsModel(BaseModel):
+    reviews_message: Optional[str] = None
+    reviews_extended_message: Optional[str] = None
 
-@app.get("/analyze-reviews/{website}", response_model=Analyze_Reviews_Model, response_description="Analyze reviews of the given website")
+@app.get("/analyze-reviews/{website}", response_model=AnalyzeReviewsModel)
 def analyze_reviews(website: str):
-
     try:
-        result = scrape_reviews_pipeline(website)
+        domain = urlparse(website.strip()).netloc or urlparse(f"https://{website.strip()}").netloc
+        reviews_message, reviews_extended_message = scrape_reviews_pipeline(domain)
 
-        if result is None:
-            return {
-                "message": None,
-                "extended_message": None
-            }
-
-        message, extended_message = result
-        print(message)
         return {
-            "message": message,
-            "extended_message": extended_message
+            "reviews_message": reviews_message,
+            "reviews_extended_message": reviews_extended_message
         }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve websites: {str(e)}"
+            detail=f"Review analysis failed: {str(e)}"
         )

@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from typing import Optional
 
 load_dotenv()
 
@@ -38,8 +39,8 @@ class MongoDBManager:
         url: str,
         message: str,
         extended_message: str,
-        reviews_message: str,
-        reviews_extended_message: str
+        reviews_message: Optional[str],
+        reviews_extended_message: Optional[str]
     ) -> str:
         """
         Add a website with security and review information
@@ -148,34 +149,6 @@ class MongoDBManager:
 # Updated usage example
 if __name__ == "__main__":
     db_manager = MongoDBManager()
-
-    try:
-        # Clear existing data for clean test
-        cleared = db_manager.clear_collection()
-        print(f"Cleared {cleared} documents")
-
-        # Add a website with all message types
-        website_id = db_manager.add_website(
-            url="https://example.com",
-            message="Security warning message",
-            extended_message="Detailed security analysis",
-            reviews_message="Review trust warning",
-            reviews_extended_message="Detailed review analysis"
-        )
-
-        if website_id:
-            print(f"Added website with ID: {website_id}")
-        else:
-            print("Website already exists in database")
-
-        # Check if website exists
-        exists = db_manager.website_exists("https://example.com")
-        print(f"Website exists: {exists}")
-
-        # Retrieve website document
-        website = db_manager.get_website("https://example.com")
-        print("Website document:")
-        print(website)
-
-    finally:
-        db_manager.close()
+    print(db_manager.clear_collection())
+    print(db_manager.get_all_websites())
+    db_manager.close()
