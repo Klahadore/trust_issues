@@ -2,7 +2,7 @@ from firecrawl import FirecrawlApp
 from pydantic import BaseModel, Field
 from typing import Any, Optional, List
 from urllib.parse import urlsplit, urlunsplit, urljoin
-from langchain_openai.chat_models.base import BaseChatOpenAI
+from langchain_openai.chat_models.base import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
@@ -15,18 +15,18 @@ deepseek_api_key = os.getenv("OPENAI_API_KEY")
 print(f"API Key loaded: {bool(deepseek_api_key)}")  # Should show True
 groq_api_key=os.getenv("GROQ_API_KEY")
 # Initialize LLM with proper configuration
-llm = BaseChatOpenAI(
-    model='deepseek-chat',
-    api_key=deepseek_api_key,
-    base_url='https://api.deepseek.com/',
-    max_tokens=8000
-)
-
 # llm = BaseChatOpenAI(
-#     model='gpt-4o',
-#     api_key=os.getenv(OPENAI_API_KEY),
-
+#     model='deepseek-chat',
+#     api_key=deepseek_api_key,
+#     base_url='https://api.deepseek.com/',
+#     max_tokens=8000
 # )
+
+llm = ChatOpenAI(
+    model='gpt-4o',
+    api_key=os.getenv('OPENAI_API_KEY_2'),
+
+)
 
 
 # if not groq_api_key:

@@ -1,6 +1,13 @@
 (() => {
   const configUrl = "http://0.0.0.0:8000/";
-  const keywords = ["sign up", "continue", "register", "get started", "join now", "join"];
+  const keywords = [
+    "sign up",
+    "continue",
+    "register",
+    "get started",
+    "join now",
+    "join",
+  ];
 
   const script = document.createElement("script");
   script.src = chrome.runtime.getURL("marked.min.js");
@@ -9,22 +16,25 @@
     // Remove sanitize: true because Marked v2+ does not support it directly
     marked.use({
       breaks: true,
-      silent: true
+      silent: true,
     });
 
     async function checkWarning(domain) {
       return new Promise((resolve) => {
-        chrome.runtime.sendMessage({
-          action: "fetchWarning",
-          domain: domain,
-        }, (response) => {
-          if (response.error) {
-            console.error("API ERROR:", response.error);
-            resolve(null);
-          } else {
-            resolve(response.data);
-          }
-        });
+        chrome.runtime.sendMessage(
+          {
+            action: "fetchWarning",
+            domain: domain,
+          },
+          (response) => {
+            if (response.error) {
+              console.error("API ERROR:", response.error);
+              resolve(null);
+            } else {
+              resolve(response.data);
+            }
+          },
+        );
       });
     }
 
@@ -42,7 +52,8 @@
       try {
         const urlObj = new URL(url);
         const parts = urlObj.hostname.split(".").filter((p) => p !== "");
-        const mainDomain = parts.length > 1 ? parts[parts.length - 2] : parts[0];
+        const mainDomain =
+          parts.length > 1 ? parts[parts.length - 2] : parts[0];
         return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
       } catch {
         return null;
@@ -52,11 +63,15 @@
     function waitForSpecificButtonPress() {
       return new Promise((resolve) => {
         const buttons = document.querySelectorAll(
-          "button, input[type='button'], input[type='submit'], a"
+          "button, input[type='button'], input[type='submit'], a",
         );
         buttons.forEach((button) => {
-          const text = (button.innerText || button.value || "").trim().toLowerCase();
-          const matchesKeyword = keywords.some((keyword) => text.includes(keyword.toLowerCase()));
+          const text = (button.innerText || button.value || "")
+            .trim()
+            .toLowerCase();
+          const matchesKeyword = keywords.some((keyword) =>
+            text.includes(keyword.toLowerCase()),
+          );
           if (matchesKeyword) {
             button.addEventListener("click", (event) => {
               event.preventDefault();
@@ -103,25 +118,84 @@
       document.body.appendChild(modal);
 
       try {
-        const data = await checkWarning(rootDomain);
-        const contentDiv = modal.querySelector(".popup-content");
+        const [warningData, reviewData] = await Promise.all([
+          checkWarning(rootDomain),
+          new Promise((resolve) => {
+            chrome.runtime.sendMessage(
+              {
+                action: "analyzeReviews",
+                domain: rootDomain,
+              },
+              (response) => {
+                if (response.error) {
+                  console.error("Review API Error:", response.error);
+                  resolve(null);
+                } else {
+                  resolve(response.data);
+                }
+              },
+            );
+          }),
+        ]);
 
+        const contentDiv = modal.querySelector(".popup-content");
         contentDiv.classList.remove("loading");
-        if (data) {
-          const markdownContent = `
-**Message:** ${data.message || "No warnings found"}
+
+        const contentWrapper = document.createElement("div");
+        contentWrapper.className = "content-wrapper";
+
+        // Warnings Section
+        if (warningData) {
+          const warningSection = document.createElement("div");
+          warningSection.className = "warning-section";
+
+          const warningMarkdown = `
+**Message:** ${warningData.message || "No warnings found"}
 
 <details>
 <summary><strong>Extended Info:</strong></summary>
-\n${data.extended_message || "Additional information not available"}
+\n${warningData.extended_message || "Additional information not available"}
 </details>
           `;
-          // Remove or replace with your own sanitation if needed
-          const htmlOutput = marked.parse(markdownContent);
-          contentDiv.innerHTML = htmlOutput;
-        } else {
-          contentDiv.innerHTML = `<p class="error">⚠️ Failed to load security information</p>`;
+          warningSection.innerHTML = marked.parse(warningMarkdown);
+          contentWrapper.appendChild(warningSection);
         }
+
+        // Reviews Section
+        if (reviewData && reviewData.length > 0) {
+          const reviewSection = document.createElement("div");
+          reviewSection.className = "review-section";
+          reviewSection.innerHTML = `<h3>User Reviews Analysis</h3>`;
+
+          reviewData.forEach((review, index) => {
+            const reviewElement = document.createElement("div");
+            reviewElement.className = "review-item";
+
+            const reviewMarkdown = `
+**Summary:** ${review.reviews_message || "No summary available"}
+
+<details>
+<summary><strong>Full Review Analysis:</strong></summary>
+\n${review.reviews_extended_message || "Detailed analysis not available"}
+</details>
+            `;
+            reviewElement.innerHTML = marked.parse(reviewMarkdown);
+            reviewSection.appendChild(reviewElement);
+          });
+
+          contentWrapper.appendChild(reviewSection);
+        } else if (reviewData !== null) {
+          const noReviews = document.createElement("p");
+          noReviews.textContent = "No review analysis available";
+          contentWrapper.appendChild(noReviews);
+        }
+
+        if (!warningData) {
+          contentWrapper.innerHTML = `<p class="error">⚠️ Failed to load security information</p>`;
+        }
+
+        contentDiv.innerHTML = "";
+        contentDiv.appendChild(contentWrapper);
 
         modal.querySelector(".popup-button.continue").disabled = false;
       } catch (err) {
@@ -136,20 +210,20 @@
         overlay.remove();
       };
 
-      modal.querySelector(".popup-button.leave").addEventListener("click", closePopup);
+      modal
+        .querySelector(".popup-button.leave")
+        .addEventListener("click", closePopup);
 
-      // If originalButton is a link, open it properly
-      modal.querySelector(".popup-button.continue").addEventListener("click", () => {
-        closePopup();
-        console.log("Executing original button's behavior...");
-
-        if (originalButton.tagName === "A" && originalButton.href) {
-          window.open(originalButton.href, originalButton.target || "_self");
-        } else {
-          // Simulate a normal button or submit
-          originalButton.click();
-        }
-      });
+      modal
+        .querySelector(".popup-button.continue")
+        .addEventListener("click", () => {
+          closePopup();
+          if (originalButton.tagName === "A" && originalButton.href) {
+            window.open(originalButton.href, originalButton.target || "_self");
+          } else {
+            originalButton.click();
+          }
+        });
     }
 
     async function init() {

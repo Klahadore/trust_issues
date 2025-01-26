@@ -104,5 +104,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then((data) => sendResponse({ data }))
       .catch((error) => sendResponse({ error: error.message }));
     return true; // Keep channel open for async
+  } else if (request.action === "analyzeReviews") {
+    // New listener for analyze-reviews
+    fetch(`${config_url}analyze-reviews/${request.domain}`)
+      .then((response) => response.json())
+      .then((data) => sendResponse({ data }))
+      .catch((error) => sendResponse({ error: error.message }));
+    return true;
   }
 });

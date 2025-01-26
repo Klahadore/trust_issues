@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 from backend.web_scraper import scraper_pipeline, scrape_reviews_pipeline
 from openai import OpenAI
 import os
+import asyncio
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -25,6 +26,30 @@ if "policies" not in st.session_state:
     st.session_state.policies = None
 if "reviews" not in st.session_state:
     st.session_state.reviews = None
+if "analysis_done" not in st.session_state:
+    st.session_state.analysis_done = False
+
+async def run_analysis(website_url):
+    """Async wrapper for scraping operations"""
+    parsed_url = urlparse(website_url)
+    loop = asyncio.get_event_loop()
+
+    try:
+        # Run both scrapers concurrently
+        policies, reviews = await asyncio.gather(
+            loop.run_in_executor(None, scraper_pipeline, parsed_url.netloc),
+            loop.run_in_executor(None, scrape_reviews_pipeline, parsed_url.netloc)
+        )
+
+        st.session_state.policies = policies
+        st.session_state.reviews = reviews
+        st.session_state.analysis_done = True
+
+    except Exception as e:
+        st.error(f"Analysis failed: {str(e)}")
+        st.session_state.analysis_done = False
+    finally:
+        st.session_state.running = False
 
 # Website input and scraping
 with st.sidebar:
@@ -35,34 +60,23 @@ with st.sidebar:
         key="website_input"
     )
 
-    if st.button("Analyze Website"):
-        if website_url:
-            try:
-                # Validate URL
-                if not website_url.startswith(('http://', 'https://')):
-                    website_url = f'https://{website_url}'
+    if st.button("Analyze Website") and website_url:
+        if not website_url.startswith(('http://', 'https://')):
+            website_url = f'https://{website_url}'
 
-                parsed_url = urlparse(website_url)
-                if not parsed_url.netloc:
-                    raise ValueError("Invalid URL format")
-
-                # Scrape policies
-                with st.spinner("Analyzing website policies..."):
-                    st.session_state.policies = scraper_pipeline(parsed_url.netloc)
-
-                # Scrape reviews
-                with st.spinner("Checking consumer reviews..."):
-                    st.session_state.reviews = scrape_reviews_pipeline(parsed_url.netloc)
-
-                st.success("Analysis complete!")
-
-            except Exception as e:
-                st.error(f"Analysis failed: {str(e)}")
+        parsed_url = urlparse(website_url)
+        if not parsed_url.netloc:
+            st.error("Invalid URL format")
         else:
-            st.warning("Please enter a website URL")
+            st.session_state.running = True
+            asyncio.run(run_analysis(website_url))
+
+if st.session_state.get('running'):
+    with st.sidebar:
+        st.spinner("Analyzing website content...")
 
 # Main chat interface
-if st.session_state.policies or st.session_state.reviews:
+if st.session_state.analysis_done:
     # Create system prompt with policies
     system_prompt = "You are a legal expert analyzing website policies and consumer reviews. "
 
@@ -101,15 +115,20 @@ if st.session_state.policies or st.session_state.reviews:
                   for m in st.session_state.messages]
             ]
 
-            stream = client.chat.completions.create(
-                model="deepseek-chat",
-                messages=full_messages,
-                stream=True,
-            )
+            try:
+                stream = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=full_messages,
+                    stream=True,
+                    timeout=30  # Add timeout
+                )
 
-            response = st.write_stream(stream)
+                response = st.write_stream(stream)
+
+            except Exception as e:
+                response = f"Error generating response: {str(e)}"
 
         st.session_state.messages.append({"role": "assistant", "content": response})
 
-else:
+elif not st.session_state.analysis_done and not st.session_state.get('running'):
     st.info("Enter a website URL and click 'Analyze Website' to begin")
