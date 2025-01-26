@@ -58,7 +58,7 @@ groq_api_key=os.getenv("GROQ_API_KEY")
 rate_limiter = TokenRateLimiter(tokens_per_minute=2900)
 
 llm = ChatOpenAI(
-    model='gpt-4o',
+    model='gpt-4o-mini',
     api_key=os.getenv('OPENAI_API_KEY_2'),
     max_completion_tokens=3000,
     rate_limiter=rate_limiter
