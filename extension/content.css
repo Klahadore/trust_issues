@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------
    Import fonts from Google Fonts
 --------------------------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=Protest+Strike&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Protest+Strike&display=swap");
 
 /* ---------------------------------------------------------
    Overlay (dark semi-transparent background)
@@ -13,7 +13,7 @@
     width: 100%;
     height: 100%;
     background: rgba(145, 113, 61, 0.5); /* Dark semi-transparent overlay */
-    backdrop-filter: blur(10px); /* Applies blur to the background */
+    backdrop-filter: blur(10px);         /* Applies blur to the background */
     z-index: 9999; /* Behind the modal */
 }
 
@@ -33,6 +33,7 @@
     z-index: 10000;
     padding: 20px;
     box-sizing: border-box;
+    font-family: Arial, sans-serif;
 }
 
 /* ---------------------------------------------------------
@@ -53,11 +54,12 @@
     width: 100%;
     height: 2px;
     background-color: #febf3c; /* Gold-like color */
-    margin: 4px 0; /* Minimize spacing around the separator */
+    margin: 4px 0;            /* Minimize spacing around the separator */
 }
 
 /* ---------------------------------------------------------
    Text content
+   (Modified to incorporate paragraph/list spacing)
 --------------------------------------------------------- */
 .popup-content {
     font-size: 1.2rem;
@@ -65,21 +67,29 @@
     line-height: 1.5;
     color: #333;
     text-align: left;
+    /* Provide uniform padding around text content */
+    padding: 1rem 1.5rem;
     margin: 0;
-    padding-bottom: 1rem;
 }
 
-/* NEW: Improve bullet list spacing/indentation */
-.popup-content ul {
-    margin-left: 1.5rem;      /* Increase indentation for bullet lists */
-    padding-left: 1.5rem;
-}
+/* Consistent margins for paragraphs and lists */
+.popup-content p,
+.popup-content ul,
 .popup-content ol {
-    margin-left: 1.5rem;      /* Increase indentation for bullet lists */
+    margin: 1em 0; /* vertical spacing before/after paragraphs or lists */
+    padding: 0;    /* remove default list padding */
+}
+
+/* Increase left indentation for lists */
+.popup-content ul,
+.popup-content ol {
+    margin-left: 1.5rem;
     padding-left: 1.5rem;
 }
+
+/* Add spacing between individual list items */
 .popup-content li {
-    margin: 0.5rem 0;        /* Add spacing between list items */
+    margin: 0.5em 0;
 }
 
 /* ---------------------------------------------------------
