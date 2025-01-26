@@ -1,73 +1,78 @@
-const config_url = "http://0.0.0.0:8000/";
-const keywords = ["sign up", "continue", "register", "get started", "join now", "join"];
+(() => {
+  // ---------------------------------------------------------
+  // Configuration
+  // ---------------------------------------------------------
+  const configUrl = "http://0.0.0.0:8000/";
+  const keywords = ["sign up", "continue", "register", "get started", "join now", "join"];
 
-// Function to check for warnings from the API
-async function checkWarning(domain) {
-  try {
-    if (!domain.includes(".")) {
-      return;
+  // ---------------------------------------------------------
+  // Fetching warning from API
+  // ---------------------------------------------------------
+  async function checkWarning(domain) {
+    try {
+      if (!domain.includes(".")) {
+        return;
+      }
+      const response = await fetch(`${configUrl}get_warning/${domain}`);
+      const result = await response.json();
+      console.log("API response:", result, domain);
+      return result.message;
+    } catch (error) {
+      console.error("Failed to check warning:", error);
     }
-    const response = await fetch(`${config_url}get_warning/${domain}`);
-    const result = await response.json();
-    console.log("API response:", result, domain);
-    return result.message;
-  } catch (error) {
-    console.error("Failed to check warning:", error);
   }
-}
 
-// Function to wait for a specific button press
-function waitForSpecificButtonPress() {
-  return new Promise((resolve) => {
-    const buttons = document.querySelectorAll("button, input[type='button'], input[type='submit'], a");
-
-    buttons.forEach((button) => {
-      const text = (button.innerText || button.value || "").toLowerCase();
-
-      // Check if the button matches the keywords
-      const matchesKeyword = keywords.some((keyword) =>
-        text.includes(keyword.toLowerCase())
+  // ---------------------------------------------------------
+  // Wait for specific button press
+  // ---------------------------------------------------------
+  function waitForSpecificButtonPress() {
+    return new Promise((resolve) => {
+      // Select all relevant clickable elements
+      const buttons = document.querySelectorAll(
+        "button, input[type='button'], input[type='submit'], a"
       );
 
-      if (matchesKeyword) {
-        button.addEventListener("click", (event) => {
-          event.preventDefault(); // Stop the original button behavior
-          console.log(`Button clicked: "${text.trim()}"`);
-          resolve(button); // Resolve the Promise with the clicked button
-        });
-      }
+      // Attach click handlers to any button matching our keywords
+      buttons.forEach((button) => {
+        const text = (button.innerText || button.value || "").toLowerCase();
+        const matchesKeyword = keywords.some((keyword) =>
+          text.includes(keyword.toLowerCase())
+        );
+
+        if (matchesKeyword) {
+          button.addEventListener("click", (event) => {
+            event.preventDefault(); // Stop the original button behavior
+            console.log(`Button clicked: "${text.trim()}"`);
+            resolve(button); // Resolve the Promise with the clicked button
+          });
+        }
+      });
     });
-  });
-}
+  }
 
-// Main function
-(async function () {
-  console.log("Waiting for button press...");
-  const originalButton = await waitForSpecificButtonPress();
-
-  // Check if the modal already exists
-  if (!document.getElementById("extension-popup-modal")) {
-    console.log("Creating modal...");
-
-    // Add the CSS file to the document
+  // ---------------------------------------------------------
+  // Create modal elements and behavior
+  // ---------------------------------------------------------
+  function createModal(originalButton) {
+    // Load CSS
     const cssLink = document.createElement("link");
     cssLink.rel = "stylesheet";
     cssLink.type = "text/css";
     cssLink.href = chrome.runtime.getURL("content.css");
     document.head.appendChild(cssLink);
 
-    // Create the blurred overlay
+    // Create overlay
     const overlay = document.createElement("div");
     overlay.id = "background-overlay";
     overlay.className = "background-overlay";
     document.body.appendChild(overlay);
 
-    // Create the modal
+    // Create modal container
     const modal = document.createElement("div");
     modal.id = "extension-popup-modal";
     modal.className = "popup-modal";
 
-    // Add content to the modal
+    // Populate modal HTML
     modal.innerHTML = `
       <h2 class="popup-title">TRUST ISSUES</h2>
       <div class="popup-content">
@@ -83,32 +88,51 @@ function waitForSpecificButtonPress() {
       </div>
     `;
 
-    // Append the modal to the body
+    // Append modal to the document
     document.body.appendChild(modal);
 
-    // Function to remove the modal and overlay
+    // Cleanup function to remove modal & overlay
     const closePopup = () => {
       modal.remove();
       overlay.remove();
       console.log("Modal closed.");
     };
 
-    // Add event listeners to the buttons
+    // "Leave" button closes the popup
     document.querySelector(".popup-button.leave").addEventListener("click", closePopup);
+
+    // "Continue" button closes popup and simulates original behavior
     const continueButton = document.querySelector(".popup-button.continue");
     continueButton.addEventListener("click", () => {
-      modal.remove();
-      overlay.remove();
+      closePopup();
       console.log("Executing original button's behavior...");
 
-      // Simulate the original button's behavior
       if (originalButton.tagName === "A" && originalButton.href) {
+        // Simulate clicking a link
         window.open(originalButton.href, originalButton.target || "_self");
       } else {
+        // Simulate clicking a standard button or submit
         originalButton.click();
       }
     });
 
-    console.log("Modal displayed, behavior reassigned to 'Continue with Sign Up'.");
+    console.log("Modal displayed. Behavior reassigned to 'Continue with Sign Up'.");
   }
+
+  // ---------------------------------------------------------
+  // Main logic
+  // ---------------------------------------------------------
+  async function init() {
+    console.log("Waiting for button press...");
+    const originalButton = await waitForSpecificButtonPress();
+
+    // Only create the modal if it doesn't already exist
+    if (!document.getElementById("extension-popup-modal")) {
+      console.log("Creating modal...");
+      createModal(originalButton);
+    }
+  }
+
+  // Start
+  init();
 })();
