@@ -95,3 +95,14 @@ chrome.tabs.onActivated.addListener((info) => handleTabUpdate(info.tabId));
 chrome.tabs.onUpdated.addListener((tabId, change) => {
   if (change.url) handleTabUpdate(tabId);
 });
+
+// Message listener for API requests
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "fetchWarning") {
+    fetch(`${config_url}get_warning/${request.domain}`)
+      .then((response) => response.json())
+      .then((data) => sendResponse({ data }))
+      .catch((error) => sendResponse({ error: error.message }));
+    return true; // Keep channel open for async
+  }
+});
