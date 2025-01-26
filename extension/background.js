@@ -21,7 +21,7 @@ async function addURL(domain) {
       console.error("Invalid domain:", domain);
       return { error: "Invalid domain format" };
     }
-
+    console.log("adding domain", domain);
     const response = await fetch(`${config_url}add_website`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,6 +36,7 @@ async function addURL(domain) {
       return { error: error.detail || "Request failed" };
     }
 
+    console.log("added domain", domain);
     return await response.json();
   } catch (err) {
     if (err.name === "AbortError") {
