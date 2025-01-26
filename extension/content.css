@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------
    Import fonts from Google Fonts
 --------------------------------------------------------- */
-@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Protest+Strike&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Protest+Strike&display=swap');
 
 /* ---------------------------------------------------------
    Overlay (dark semi-transparent background)
@@ -25,15 +25,14 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 500px;
+    width: 550px;
     max-width: 90%;
     background: #fff;
     border-radius: 15px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
     z-index: 10000;
-    padding: 12px;
+    padding: 20px;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
 }
 
 /* ---------------------------------------------------------
@@ -68,6 +67,19 @@
     text-align: left;
     margin: 0;
     padding-bottom: 1rem;
+}
+
+/* NEW: Improve bullet list spacing/indentation */
+.popup-content ul {
+    margin-left: 1.5rem;      /* Increase indentation for bullet lists */
+    padding-left: 1.5rem;
+}
+.popup-content ol {
+    margin-left: 1.5rem;      /* Increase indentation for bullet lists */
+    padding-left: 1.5rem;
+}
+.popup-content li {
+    margin: 0.5rem 0;        /* Add spacing between list items */
 }
 
 /* ---------------------------------------------------------
@@ -111,6 +123,9 @@
     background-color: #7e4c04; /* Slightly darker on hover */
 }
 
+/* ---------------------------------------------------------
+   Loading spinner
+--------------------------------------------------------- */
 .loading .spinner {
     border: 4px solid #f3f3f3;
     border-top: 4px solid #3498db;
@@ -130,6 +145,9 @@
     }
 }
 
+/* ---------------------------------------------------------
+   Error styling
+--------------------------------------------------------- */
 .error {
     color: #e74c3c;
     font-weight: bold;
