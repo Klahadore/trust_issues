@@ -4,19 +4,30 @@ from backend.web_scraper import scraper_pipeline, scrape_reviews_pipeline
 from openai import OpenAI
 import os
 import asyncio
-
+from about_page import about_page
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
 
+st.set_page_config(page_title="Policy Analyzer", page_icon="⚖️")
+
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", ["Policy Analyzer", "About Trust Issues"])
+
+if page == "Policy Analyzer":
+    # Your existing policy analyzer code
+    pass
+elif page == "About Trust Issues":
+    about_page()
+
 # Initialize DeepSeek client
 client = OpenAI(
     base_url="https://api.deepseek.com/",
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=os.getenv("OPENAI_API_KEY"),
+
 )
 
 # Configure Streamlit app
-st.set_page_config(page_title="Policy Analyzer", page_icon="⚖️")
 st.title("Website Policy Analyzer")
 
 # Initialize session state

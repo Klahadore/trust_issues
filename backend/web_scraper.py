@@ -2,29 +2,66 @@ from firecrawl import FirecrawlApp
 from pydantic import BaseModel, Field
 from typing import Any, Optional, List
 from urllib.parse import urlsplit, urlunsplit, urljoin
-from langchain_openai.chat_models.base import ChatOpenAI
+from langchain_openai.chat_models.base import ChatOpenAI, BaseChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 import os
 from dotenv import load_dotenv
-
+from langchain_core.rate_limiters import BaseRateLimiter
+import time
 load_dotenv()
+
+class TokenRateLimiter(BaseRateLimiter):
+    def __init__(self, tokens_per_minute: int):
+        self.tokens_per_minute = tokens_per_minute
+        self.tokens_used = 0
+        self.start_time = time.time()
+
+    def acquire(self, *, blocking: bool = True) -> bool:
+        current_time = time.time()
+        elapsed_time = current_time - self.start_time
+
+        # Reset tokens if a minute has passed
+        if elapsed_time >= 60:
+            self.tokens_used = 0
+            self.start_time = current_time
+
+        # Check if tokens are available
+        if self.tokens_used + 1 <= self.tokens_per_minute:
+            self.tokens_used += 1
+            return True
+        else:
+            if blocking:
+                # Wait until the next minute
+                time.sleep(60 - elapsed_time)
+                self.tokens_used = 0
+                self.start_time = time.time()
+                return True
+            else:
+                return False
+
+    async def aacquire(self, *, blocking: bool = True) -> bool:
+        return self.acquire(blocking=blocking)
+
 
 deepseek_api_key = os.getenv("OPENAI_API_KEY")
 print(f"API Key loaded: {bool(deepseek_api_key)}")  # Should show True
 groq_api_key=os.getenv("GROQ_API_KEY")
-# Initialize LLM with proper configuration
+
 # llm = BaseChatOpenAI(
 #     model='deepseek-chat',
 #     api_key=deepseek_api_key,
 #     base_url='https://api.deepseek.com/',
 #     max_tokens=8000
 # )
+rate_limiter = TokenRateLimiter(tokens_per_minute=2900)
 
 llm = ChatOpenAI(
     model='gpt-4o',
     api_key=os.getenv('OPENAI_API_KEY_2'),
+    max_completion_tokens=3000,
+    rate_limiter=rate_limiter
 
 )
 
