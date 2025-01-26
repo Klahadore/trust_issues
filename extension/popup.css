@@ -7,39 +7,47 @@ body {
     align-items: center; /* Vertically center */
     justify-content: center; /* Horizontally center */
     background: transparent; /* Transparent background */
-  }
-  
-  /* Popup container */
-  .popup {
+}
+
+/* Popup container */
+.popup {
     width: 400px;
     padding: 30px;
     background: rgba(255, 248, 220, 0.85); /* Semi-transparent cream */
     border-radius: 20px; /* Rounded corners */
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25); /* Subtle shadow */
     text-align: center;
-  }
-  
-  
-  /* Title styling */
-  .popup h2 {
+}
+
+/* Title styling */
+.popup h2 {
     font-size: 24px;
     color: #000; /* Black text */
-    margin: 0;
-  }
-  
-  /* Button styling */
-  .continue-button {
-    padding: 10px 20px;
+    margin: 0 0 16px 0; /* Add margin below the title */
+}
+
+/* Description styling */
+.popup .description {
+    font-size: 14px;
+    color: #333; /* Dark gray text */
+    margin-bottom: 24px; /* Add margin below the description */
+    line-height: 1.5;
+}
+
+/* Website link styling (custom button styling) */
+.popup .website-link {
+    display: inline-block;
+    padding: 12px 24px;
     background: #a9741e; /* Gold-like color */
     color: #fff; /* White text */
+    text-decoration: none;
     border: none;
-    border-radius: 10px;
-    font-size: 16px;
+    border-radius: 10px; /* Rounded corners */
+    font-size: 16px; /* Larger font size */
     cursor: pointer;
-    transition: background-color 0.3s;
-  }
-  
-  .continue-button:hover {
+    transition: background-color 0.3s ease;
+}
+
+.popup .website-link:hover {
     background: #814c15; /* Darker gold on hover */
-  }
-  
+}
