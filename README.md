@@ -41,10 +41,10 @@ uvicorn main:app --reload
 or
 fastapi run backend/server.py
 ```
-### 5. Run the Localhost Website
-```bash
-run app.py
-```
 
+### 5. Start the Streamlit Chat App
+```bash
+streamlit run app.py
+```
 
 
